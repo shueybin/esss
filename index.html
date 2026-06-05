@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Science Simulation Hub</title>
+    
+    <!-- Development CSS: Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0f172a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        .dashboard { position: absolute; top: 20px; left: 20px; z-index: 10; width: 300px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border-radius: 12px; border: 1px solid #334155; padding: 20px; }
+        .info-panel { position: absolute; bottom: 20px; left: 20px; z-index: 10; width: 400px; background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border-radius: 12px; border: 1px solid #334155; padding: 20px; }
+        .nav-btn { display: block; width: 100%; margin-bottom: 12px; padding: 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #f8fafc; font-weight: 600; cursor: pointer; transition: all 0.2s ease; text-align: left; }
+        .nav-btn:hover { background: #334155; border-color: #64748b; }
+        .nav-btn.active { background: #2563eb; border-color: #3b82f6; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); }
+    </style>
+</head>
+<body>
+
+    <!-- Control Dashboard -->
+    <div class="dashboard shadow-2xl">
+        <h1 class="text-2xl font-bold mb-6 text-white tracking-wide">3D Science Hub</h1>
+        <button class="nav-btn active" id="btn-physics">
+            <span class="text-lg">⚙️</span> Physics
+        </button>
+        <button class="nav-btn" id="btn-chemistry">
+            <span class="text-lg">🧪</span> Chemistry
+        </button>
+        <button class="nav-btn" id="btn-biology">
+            <span class="text-lg">🧬</span> Biology
+        </button>
+        <button class="nav-btn" id="btn-space">
+            <span class="text-lg">🌍</span> Earth & Space
+        </button>
+    </div>
+
+    <!-- Contextual Information Panel -->
+    <div class="info-panel shadow-2xl" id="info-panel">
+        <h2 class="text-xl font-bold mb-2 text-blue-400" id="info-title">Physics: Simple Pendulum</h2>
+        <p class="text-sm text-slate-300 leading-relaxed" id="info-desc">A demonstration of continuous harmonic motion, illustrating the transfer between potential and kinetic energy within a gravitational field.</p>
+    </div>
+
+    <!-- Rendering Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Three.js Core Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- 1. CORE ENGINE SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        camera.position.z = 18;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 10);
+        scene.add(directionalLight);
+
+        // Container for the active simulation
+        let activeSimGroup = new THREE.Group();
+        scene.add(activeSimGroup);
+
+        // --- 2. SUBJECT SIMULATIONS ---
+
+        // A. Physics: Pendulum Mechanics
+        const physicsSim = new THREE.Group();
+        const pivot = new THREE.Object3D();
+        pivot.position.y = 6;
+        
+        const stringGeo = new THREE.CylinderGeometry(0.05, 0.05, 10);
+        const stringMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8 });
+        const string = new THREE.Mesh(stringGeo, stringMat);
+        string.position.y = -5;
+        
+        const bobGeo = new THREE.SphereGeometry(1.5, 32, 32);
+        const bobMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.2, metalness: 0.5 });
+        const bob = new THREE.Mesh(bobGeo, bobMat);
+        bob.position.y = -10;
+        
+        pivot.add(string);
+        pivot.add(bob);
+        physicsSim.add(pivot);
+
+        // B. Chemistry: H2O Molecular Structure
+        const chemistrySim = new THREE.Group();
+        const oxygenGeo = new THREE.SphereGeometry(2.5, 32, 32);
+        const oxygenMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 });
+        const oxygen = new THREE.Mesh(oxygenGeo, oxygenMat);
+        
+        const hydrogenGeo = new THREE.SphereGeometry(1.2, 32, 32);
+        const hydrogenMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+        
+        const h1 = new THREE.Mesh(hydrogenGeo, hydrogenMat);
+        h1.position.set(2.5, -1.8, 0);
+        const h2 = new THREE.Mesh(hydrogenGeo, hydrogenMat);
+        h2.position.set(-2.5, -1.8, 0);
+        
+        // Bonds
+        const bondGeo = new THREE.CylinderGeometry(0.3, 0.3, 3.5);
+        const bondMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1 });
+        
+        const bond1 = new THREE.Mesh(bondGeo, bondMat);
+        bond1.position.set(1.25, -0.9, 0);
+        bond1.rotation.z = -Math.PI / 4;
+        
+        const bond2 = new THREE.Mesh(bondGeo, bondMat);
+        bond2.position.set(-1.25, -0.9, 0);
+        bond2.rotation.z = Math.PI / 4;
+
+        chemistrySim.add(oxygen, h1, h2, bond1, bond2);
+
+        // C. Biology: DNA Double Helix
+        const biologySim = new THREE.Group();
+        const pairCount = 24;
+        for (let i = 0; i < pairCount; i++) {
+            const angle = i * 0.4;
+            const yPos = (i - pairCount/2) * 0.8;
+            
+            const strandMat1 = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+            const strandMat2 = new THREE.MeshStandardMaterial({ color: 0x10b981 });
+            const nodeGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            
+            const node1 = new THREE.Mesh(nodeGeo, strandMat1);
+            node1.position.set(Math.cos(angle) * 3, yPos, Math.sin(angle) * 3);
+            
+            const node2 = new THREE.Mesh(nodeGeo, strandMat2);
+            node2.position.set(Math.cos(angle + Math.PI) * 3, yPos, Math.sin(angle + Math.PI) * 3);
+            
+            const bridgeGeo = new THREE.CylinderGeometry(0.15, 0.15, 6);
+            const bridgeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0 });
+            const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+            bridge.position.set(0, yPos, 0);
+            bridge.rotation.x = Math.PI / 2;
+            bridge.rotation.z = angle;
+
+            biologySim.add(node1, node2, bridge);
+        }
+
+        // D. Earth & Space: Orbital Mechanics
+        const spaceSim = new THREE.Group();
+        const sunGeo = new THREE.SphereGeometry(4, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        
+        const earthOrbit = new THREE.Object3D();
+        const earthGeo = new THREE.SphereGeometry(1.5, 32, 32);
+        const earthMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.7 });
+        const earth = new THREE.Mesh(earthGeo, earthMat);
+        earth.position.x = 10;
+        
+        const moonOrbit = new THREE.Object3D();
+        moonOrbit.position.x = 10;
+        const moonGeo = new THREE.SphereGeometry(0.4, 16, 16);
+        const moonMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1 });
+        const moon = new THREE.Mesh(moonGeo, moonMat);
+        moon.position.x = 2.5;
+        
+        moonOrbit.add(moon);
+        earthOrbit.add(earth, moonOrbit);
+        spaceSim.add(sun, earthOrbit);
+
+        // --- 3. ANIMATION & STATE LOGIC ---
+
+        let activeSimId = 'physics';
+        const clock = new THREE.Clock();
+
+        function switchSimulation(id) {
+            // Clear current models
+            while(activeSimGroup.children.length > 0){ 
+                activeSimGroup.remove(activeSimGroup.children[0]); 
+            }
+            activeSimId = id;
+            
+            // Inject new models
+            if(id === 'physics') activeSimGroup.add(physicsSim);
+            if(id === 'chemistry') activeSimGroup.add(chemistrySim);
+            if(id === 'biology') activeSimGroup.add(biologySim);
+            if(id === 'space') activeSimGroup.add(spaceSim);
+            
+            // Reset rotations
+            physicsSim.rotation.set(0,0,0);
+            chemistrySim.rotation.set(0,0,0);
+            biologySim.rotation.set(0,0,0);
+        }
+
+        // Load initial state
+        switchSimulation('physics');
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            if (activeSimId === 'physics') {
+                pivot.rotation.z = Math.sin(time * 1.5) * 1.2;
+            } else if (activeSimId === 'chemistry') {
+                chemistrySim.rotation.y = time * 0.5;
+                chemistrySim.rotation.x = Math.sin(time * 0.5) * 0.2;
+            } else if (activeSimId === 'biology') {
+                biologySim.rotation.y = time * 0.3;
+            } else if (activeSimId === 'space') {
+                earthOrbit.rotation.y = time * 0.4;
+                moonOrbit.rotation.y = time * 1.5;
+                earth.rotation.y = time * 0.8;
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- 4. UI EVENT LISTENERS ---
+
+        const subjectData = {
+            'physics': { 
+                title: 'Physics: Simple Pendulum', 
+                desc: 'A demonstration of continuous harmonic motion, illustrating the transfer between potential and kinetic energy within a gravitational field.' 
+            },
+            'chemistry': { 
+                title: 'Chemistry: H2O Molecule', 
+                desc: 'A 3D visualization of molecular geometry, showing two hydrogen atoms covalently bonded to a central oxygen atom.' 
+            },
+            'biology': { 
+                title: 'Biology: DNA Double Helix', 
+                desc: 'An interactive structural model of deoxyribonucleic acid, showcasing the twisted ladder shape formed by nucleotide base pairs.' 
+            },
+            'space': { 
+                title: 'Earth & Space: Orbital Mechanics', 
+                desc: 'A simulated kinematic model of the Earth orbiting the central Sun, accompanied by the Moon revolving around the Earth.' 
+            }
+        };
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Update button styles
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                const targetBtn = e.target.closest('.nav-btn');
+                targetBtn.classList.add('active');
+                
+                // Update 3D Scene and Info Panel
+                const simId = targetBtn.id.replace('btn-', '');
+                switchSimulation(simId);
+                
+                document.getElementById('info-title').innerText = subjectData[simId].title;
+                document.getElementById('info-desc').innerText = subjectData[simId].desc;
+            });
+        });
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
+
+
